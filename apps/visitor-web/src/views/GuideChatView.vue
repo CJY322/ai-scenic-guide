@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
 import { nextTick, ref } from 'vue'
-import { MapPin, Route, ShieldCheck, Sparkles, Volume2, Wifi } from '@lucide/vue'
+import { MapPin, Mic, Route, ShieldCheck, Sparkles, Volume2, Wifi } from '@lucide/vue'
 import { getChatErrorMessage, sendChatMessage } from '../api/chat'
 import ChatInput from '../components/ChatInput.vue'
 import MessageBubble from '../components/MessageBubble.vue'
@@ -9,6 +9,7 @@ import { useGuideSpeech } from '../composables/useGuideSpeech'
 import type { ChatMessage } from '../types/chat'
 
 const SESSION_STORAGE_KEY = 'ai-scenic-guide-session-id'
+const AUTO_SEND_VOICE_STORAGE_KEY = 'ai-scenic-guide-auto-send-voice'
 
 const suggestedQuestions = [
   '景区有哪些值得参观的景点？',
@@ -18,6 +19,7 @@ const suggestedQuestions = [
 ]
 
 const sessionId = getOrCreateSessionId()
+const autoSendVoice = ref(readBooleanPreference(AUTO_SEND_VOICE_STORAGE_KEY))
 const isLoading = ref(false)
 const scrollAnchor = ref<HTMLElement | null>(null)
 const {
@@ -52,6 +54,10 @@ function getOrCreateSessionId(): string {
   const id = `web-${crypto.randomUUID ? crypto.randomUUID() : createMessageId('session')}`
   window.localStorage.setItem(SESSION_STORAGE_KEY, id)
   return id
+}
+
+function readBooleanPreference(key: string): boolean {
+  return window.localStorage.getItem(key) === 'true'
 }
 
 function createMessageId(prefix: string): string {
@@ -149,6 +155,12 @@ function handleAutoSpeakChange(event: Event) {
   setAutoSpeak(target.checked)
 }
 
+function handleAutoSendVoiceChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  autoSendVoice.value = target.checked
+  window.localStorage.setItem(AUTO_SEND_VOICE_STORAGE_KEY, target.checked ? 'true' : 'false')
+}
+
 function handleToggleSpeech(message: ChatMessage) {
   toggleSpeech(message.id, message.content)
 }
@@ -173,7 +185,7 @@ async function scrollToBottom() {
         <div>
           <p class="guide-kicker">文字问答MVP</p>
           <h1>AI景区数字人导游</h1>
-          <p>您好，我会用清晰、稳妥的方式回答景点、路线、交通和服务设施问题，并支持导游语音播报。</p>
+          <p>您好，我会用清晰、稳妥的方式回答景点、路线、交通和服务设施问题，并支持语音提问与导游播报。</p>
         </div>
       </section>
 
@@ -191,7 +203,7 @@ async function scrollToBottom() {
         <div class="status-row">
           <MapPin :size="18" />
           <span>当前阶段</span>
-          <strong>Phase 3</strong>
+          <strong>Phase 4</strong>
         </div>
       </section>
 
@@ -225,6 +237,16 @@ async function scrollToBottom() {
               自动播报
             </span>
           </label>
+          <label class="auto-speak-toggle">
+            <input type="checkbox" :checked="autoSendVoice" @change="handleAutoSendVoiceChange" />
+            <span class="toggle-track" aria-hidden="true">
+              <span class="toggle-thumb"></span>
+            </span>
+            <span class="auto-speak-toggle__text">
+              <Mic :size="15" />
+              识别后发送
+            </span>
+          </label>
           <button v-if="hasActiveSpeech" type="button" class="stop-speech-button" @click="stopSpeech">停止</button>
           <span class="session-chip">{{ sessionId.slice(0, 18) }}</span>
         </div>
@@ -246,7 +268,7 @@ async function scrollToBottom() {
         <div ref="scrollAnchor" class="scroll-anchor"></div>
       </div>
 
-      <ChatInput :disabled="isLoading" @send="handleSend" />
+      <ChatInput :auto-send-after-voice="autoSendVoice" :disabled="isLoading" @send="handleSend" />
     </section>
   </main>
 </template>

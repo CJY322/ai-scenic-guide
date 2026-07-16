@@ -183,3 +183,13 @@ GUIDE_DIFY_API_KEY=你的Dify应用APIKey
 
 说明文档见：`docs/phase-three-tts.md`。
 
+## 第四阶段：游客语音输入
+
+已在游客端增加浏览器原生 ASR 语音输入能力：
+
+- 输入框旁边支持麦克风语音识别。
+- 顶部支持“识别后发送”开关。
+- 麦克风权限拒绝或浏览器不支持时，不影响文字问答。
+
+说明文档见：`docs/phase-four-asr.md`。
+

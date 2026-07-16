@@ -547,7 +547,7 @@ h2 {
 .chat-input {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 48px;
+  grid-template-columns: minmax(0, 1fr) 48px 48px;
   gap: 12px;
   padding: 16px 22px 20px;
   border-top: 1px solid var(--line);
@@ -591,17 +591,46 @@ h2 {
   font-size: 12px;
 }
 
+.voice-button,
 .send-button {
   width: 48px;
   height: 48px;
   display: grid;
   place-items: center;
   align-self: start;
+  border-radius: 8px;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease, opacity 0.16s ease;
+}
+
+.voice-button {
+  color: var(--primary-strong);
+  background: var(--primary-soft);
+  border: 1px solid var(--line-strong);
+}
+
+.voice-button:hover:not(:disabled),
+.voice-button:focus-visible {
+  background: #d7ede2;
+  border-color: var(--primary);
+  outline: none;
+}
+
+.voice-button--active {
+  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.voice-button--active:hover:not(:disabled),
+.voice-button--active:focus-visible {
+  background: #a94c29;
+  border-color: #a94c29;
+}
+
+.send-button {
   color: #ffffff;
   background: var(--primary);
   border: 1px solid var(--primary);
-  border-radius: 8px;
-  transition: background-color 0.16s ease, border-color 0.16s ease, opacity 0.16s ease;
 }
 
 .send-button:hover:not(:disabled),
@@ -611,15 +640,24 @@ h2 {
   outline: none;
 }
 
+.voice-button:disabled,
 .send-button:disabled {
   opacity: 0.5;
 }
 
-.input-error {
+.input-error,
+.voice-status {
   grid-column: 1 / -1;
   margin: -4px 0 0;
-  color: var(--danger);
   font-size: 13px;
+}
+
+.input-error {
+  color: var(--danger);
+}
+
+.voice-status {
+  color: var(--muted);
 }
 
 .scroll-anchor {
@@ -724,10 +762,11 @@ h2 {
   }
 
   .chat-input {
-    grid-template-columns: minmax(0, 1fr) 44px;
+    grid-template-columns: minmax(0, 1fr) 44px 44px;
     gap: 9px;
   }
 
+  .voice-button,
   .send-button {
     width: 44px;
     height: 44px;
