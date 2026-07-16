@@ -33,7 +33,12 @@ class GuideService:
         self.data_path = data_path
         self._entries: list[FaqEntry] | None = None
 
-    def ask(self, question: str, interests: list[str] | None = None) -> GuideAnswer:
+    def ask(
+        self,
+        question: str,
+        interests: list[str] | None = None,
+        session_id: str | None = None,
+    ) -> GuideAnswer:
         entries = self._load_entries()
         normalized_question = question.lower()
         normalized_interests = " ".join(interests or []).lower()

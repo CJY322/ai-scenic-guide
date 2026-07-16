@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from app.core.config import Settings, get_settings
 from app.core.request_id import generate_request_id
 from app.schemas.chat import ChatRequest, ChatResponse, ErrorResponse
+from app.services.dify_service import DifyGuideService
 from app.services.guide_service import GuideService, GuideServiceUnavailableError
 
 router = APIRouter()
@@ -15,8 +16,15 @@ logger = logging.getLogger(__name__)
 
 
 @lru_cache
-def get_guide_service() -> GuideService:
-    return GuideService(get_settings().mock_data_path)
+def get_guide_service() -> GuideService | DifyGuideService:
+    settings = get_settings()
+    if settings.answer_provider == "dify":
+        return DifyGuideService(
+            api_base_url=settings.dify_api_base_url,
+            api_key=settings.dify_api_key,
+            timeout_seconds=settings.dify_timeout_seconds,
+        )
+    return GuideService(settings.mock_data_path)
 
 
 @router.get("/health")
@@ -40,14 +48,14 @@ def health(settings: Settings = Depends(get_settings)) -> dict[str, str]:
 def chat(
     payload: ChatRequest,
     request: Request,
-    service: GuideService = Depends(get_guide_service),
+    service: GuideService | DifyGuideService = Depends(get_guide_service),
 ) -> ChatResponse | JSONResponse:
     start = perf_counter()
     request_id = generate_request_id()
     status_code = status.HTTP_200_OK
 
     try:
-        guide_answer = service.ask(payload.question, payload.interests)
+        guide_answer = service.ask(payload.question, payload.interests, session_id=payload.session_id)
         latency_ms = max(0, round((perf_counter() - start) * 1000))
         return ChatResponse(
             request_id=request_id,

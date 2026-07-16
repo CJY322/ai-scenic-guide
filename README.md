@@ -150,3 +150,26 @@ pytest -v
 ## 下一阶段
 
 第二阶段可在不修改前端接口契约的前提下，把 `services/api-server/app/services/guide_service.py` 中的 Mock 服务替换为 Dify、RAGFlow 或自研 RAG 知识库服务。
+## 第二阶段：黄山知识库 + Dify RAG
+
+已新增黄山风景区知识库文件：`data/knowledge/huangshan/`。
+
+Dify 接入说明见：`docs/dify-huangshan-rag.md`。
+
+后端通过环境变量切换问答服务：
+
+```text
+GUIDE_ANSWER_PROVIDER=mock   # 使用第一阶段本地 Mock
+GUIDE_ANSWER_PROVIDER=dify   # 调用 Dify Chat App API
+```
+
+启用 Dify 时，在 `services/api-server/.env` 中配置：
+
+```text
+GUIDE_ANSWER_PROVIDER=dify
+GUIDE_DIFY_API_BASE_URL=https://api.dify.ai/v1
+GUIDE_DIFY_API_KEY=你的Dify应用APIKey
+```
+
+前端接口保持不变，仍然调用 `POST /api/v1/chat`。
+
