@@ -1,23 +1,51 @@
 ﻿<script setup lang="ts">
 import { computed } from 'vue'
-import { CircleAlert, Clock3, RotateCcw, Sparkles, UserRound } from '@lucide/vue'
+import { CircleAlert, Clock3, Pause, Play, RotateCcw, Sparkles, UserRound } from '@lucide/vue'
 import type { ChatMessage } from '../types/chat'
 
 const props = defineProps<{
   message: ChatMessage
+  activeSpeechMessageId?: string | null
+  isSpeechPaused?: boolean
+  isSpeechPlaying?: boolean
+  speechSupported?: boolean
 }>()
 
 const emit = defineEmits<{
   retry: [question: string]
+  replaySpeech: [message: ChatMessage]
+  toggleSpeech: [message: ChatMessage]
 }>()
 
 const senderLabel = computed(() => (props.message.role === 'visitor' ? '游客' : '数字人导游'))
 const hasSources = computed(() => props.message.sources && props.message.sources.length > 0)
+const canSpeak = computed(
+  () =>
+    props.speechSupported &&
+    props.message.role === 'guide' &&
+    props.message.status === 'normal' &&
+    props.message.content.trim().length > 0,
+)
+const isSpeechActive = computed(() => props.activeSpeechMessageId === props.message.id)
+const speechButtonLabel = computed(() => {
+  if (!isSpeechActive.value) {
+    return '播放'
+  }
+  return props.isSpeechPaused ? '继续' : '暂停'
+})
 
 function retry() {
   if (props.message.retryQuestion) {
     emit('retry', props.message.retryQuestion)
   }
+}
+
+function toggleSpeech() {
+  emit('toggleSpeech', props.message)
+}
+
+function replaySpeech() {
+  emit('replaySpeech', props.message)
 }
 </script>
 
@@ -55,6 +83,17 @@ function retry() {
         <button type="button" class="retry-button" @click="retry">
           <RotateCcw :size="16" />
           重新发送
+        </button>
+      </div>
+
+      <div v-if="canSpeak" class="speech-actions" aria-label="语音播报">
+        <button type="button" class="speech-button" :title="speechButtonLabel" @click="toggleSpeech">
+          <Pause v-if="isSpeechActive && isSpeechPlaying" :size="16" />
+          <Play v-else :size="16" />
+          {{ speechButtonLabel }}
+        </button>
+        <button type="button" class="speech-icon-button" title="重播" aria-label="重播" @click="replaySpeech">
+          <RotateCcw :size="16" />
         </button>
       </div>
     </div>

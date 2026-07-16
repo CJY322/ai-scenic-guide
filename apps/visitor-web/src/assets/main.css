@@ -231,6 +231,94 @@ h2 {
   background: #fbfdfc;
 }
 
+.chat-header__controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.auto-speak-toggle {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.auto-speak-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-track {
+  width: 38px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  background: #dbe8e1;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  transition: background-color 0.16s ease, border-color 0.16s ease;
+}
+
+.toggle-thumb {
+  width: 16px;
+  height: 16px;
+  display: block;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(23, 37, 31, 0.2);
+  transform: translateX(0);
+  transition: transform 0.16s ease;
+}
+
+.auto-speak-toggle input:checked + .toggle-track {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.auto-speak-toggle input:checked + .toggle-track .toggle-thumb {
+  transform: translateX(16px);
+}
+
+.auto-speak-toggle input:focus-visible + .toggle-track {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.auto-speak-toggle--disabled {
+  opacity: 0.5;
+}
+
+.auto-speak-toggle__text,
+.stop-speech-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stop-speech-button {
+  min-height: 32px;
+  padding: 5px 10px;
+  color: var(--primary-strong);
+  background: var(--primary-soft);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.stop-speech-button:hover,
+.stop-speech-button:focus-visible {
+  background: #d7ede2;
+  outline: none;
+}
+
 .session-chip {
   max-width: 220px;
   display: inline-flex;
@@ -417,6 +505,45 @@ h2 {
   outline: none;
 }
 
+.speech-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.speech-button,
+.speech-icon-button {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--primary-strong);
+  background: var(--primary-soft);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.speech-button {
+  padding: 5px 10px;
+}
+
+.speech-icon-button {
+  width: 34px;
+  padding: 5px;
+}
+
+.speech-button:hover,
+.speech-button:focus-visible,
+.speech-icon-button:hover,
+.speech-icon-button:focus-visible {
+  background: #d7ede2;
+  outline: none;
+}
+
 .chat-input {
   position: relative;
   display: grid;
@@ -581,6 +708,11 @@ h2 {
   .chat-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .chat-header__controls {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .session-chip {

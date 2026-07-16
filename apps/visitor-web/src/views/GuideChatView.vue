@@ -1,10 +1,11 @@
 ﻿<script setup lang="ts">
 import { nextTick, ref } from 'vue'
-import { MapPin, Route, ShieldCheck, Sparkles, Wifi } from '@lucide/vue'
+import { MapPin, Route, ShieldCheck, Sparkles, Volume2, Wifi } from '@lucide/vue'
 import { getChatErrorMessage, sendChatMessage } from '../api/chat'
 import ChatInput from '../components/ChatInput.vue'
 import MessageBubble from '../components/MessageBubble.vue'
 import SuggestedQuestions from '../components/SuggestedQuestions.vue'
+import { useGuideSpeech } from '../composables/useGuideSpeech'
 import type { ChatMessage } from '../types/chat'
 
 const SESSION_STORAGE_KEY = 'ai-scenic-guide-session-id'
@@ -19,6 +20,18 @@ const suggestedQuestions = [
 const sessionId = getOrCreateSessionId()
 const isLoading = ref(false)
 const scrollAnchor = ref<HTMLElement | null>(null)
+const {
+  activeMessageId: activeSpeechMessageId,
+  autoSpeak,
+  hasActiveSpeech,
+  isPaused: isSpeechPaused,
+  isSpeaking: isSpeechPlaying,
+  isSupported: speechSupported,
+  replay: replaySpeech,
+  setAutoSpeak,
+  stop: stopSpeech,
+  toggle: toggleSpeech,
+} = useGuideSpeech()
 const messages = ref<ChatMessage[]>([
   {
     id: createMessageId('guide'),
@@ -69,6 +82,7 @@ async function sendQuestion(question: string) {
     return
   }
 
+  stopSpeech()
   const loadingId = createMessageId('loading')
   isLoading.value = true
   messages.value.push({
@@ -95,7 +109,7 @@ async function sendQuestion(question: string) {
     })
 
     removeMessage(loadingId)
-    messages.value.push({
+    const guideMessage: ChatMessage = {
       id: response.request_id,
       role: 'guide',
       content: response.answer,
@@ -105,7 +119,11 @@ async function sendQuestion(question: string) {
       requestId: response.request_id,
       latencyMs: response.latency_ms,
       fallback: response.fallback,
-    })
+    }
+    messages.value.push(guideMessage)
+    if (autoSpeak.value) {
+      toggleSpeech(guideMessage.id, guideMessage.content)
+    }
   } catch (error) {
     removeMessage(loadingId)
     messages.value.push({
@@ -126,6 +144,19 @@ function removeMessage(id: string) {
   messages.value = messages.value.filter((message) => message.id !== id)
 }
 
+function handleAutoSpeakChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  setAutoSpeak(target.checked)
+}
+
+function handleToggleSpeech(message: ChatMessage) {
+  toggleSpeech(message.id, message.content)
+}
+
+function handleReplaySpeech(message: ChatMessage) {
+  replaySpeech(message.id, message.content)
+}
+
 async function scrollToBottom() {
   await nextTick()
   scrollAnchor.value?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -142,7 +173,7 @@ async function scrollToBottom() {
         <div>
           <p class="guide-kicker">文字问答MVP</p>
           <h1>AI景区数字人导游</h1>
-          <p>您好，我会用清晰、稳妥的方式回答景点、路线、交通和服务设施问题。</p>
+          <p>您好，我会用清晰、稳妥的方式回答景点、路线、交通和服务设施问题，并支持导游语音播报。</p>
         </div>
       </section>
 
@@ -155,12 +186,12 @@ async function scrollToBottom() {
         <div class="status-row">
           <ShieldCheck :size="18" />
           <span>数据来源</span>
-          <strong>Mock</strong>
+          <strong>Dify RAG</strong>
         </div>
         <div class="status-row">
           <MapPin :size="18" />
           <span>当前阶段</span>
-          <strong>Phase 1</strong>
+          <strong>Phase 3</strong>
         </div>
       </section>
 
@@ -178,7 +209,25 @@ async function scrollToBottom() {
           <p class="guide-kicker">游客问答</p>
           <h2>景区导览对话</h2>
         </div>
-        <span class="session-chip">{{ sessionId.slice(0, 18) }}</span>
+        <div class="chat-header__controls">
+          <label class="auto-speak-toggle" :class="{ 'auto-speak-toggle--disabled': !speechSupported }">
+            <input
+              type="checkbox"
+              :checked="autoSpeak"
+              :disabled="!speechSupported"
+              @change="handleAutoSpeakChange"
+            />
+            <span class="toggle-track" aria-hidden="true">
+              <span class="toggle-thumb"></span>
+            </span>
+            <span class="auto-speak-toggle__text">
+              <Volume2 :size="15" />
+              自动播报
+            </span>
+          </label>
+          <button v-if="hasActiveSpeech" type="button" class="stop-speech-button" @click="stopSpeech">停止</button>
+          <span class="session-chip">{{ sessionId.slice(0, 18) }}</span>
+        </div>
       </header>
 
       <div class="message-list" aria-live="polite">
@@ -186,7 +235,13 @@ async function scrollToBottom() {
           v-for="message in messages"
           :key="message.id"
           :message="message"
+          :active-speech-message-id="activeSpeechMessageId"
+          :is-speech-paused="isSpeechPaused"
+          :is-speech-playing="isSpeechPlaying"
+          :speech-supported="speechSupported"
+          @replay-speech="handleReplaySpeech"
           @retry="sendQuestion"
+          @toggle-speech="handleToggleSpeech"
         />
         <div ref="scrollAnchor" class="scroll-anchor"></div>
       </div>
