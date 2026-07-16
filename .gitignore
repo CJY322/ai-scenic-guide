@@ -1,0 +1,38 @@
+﻿# Dependencies
+node_modules/
+.venv/
+venv/
+env/
+
+# Build outputs
+dist/
+build/
+coverage/
+.pytest_cache/
+htmlcov/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Environment and local settings
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.development
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor and OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.tmp/
