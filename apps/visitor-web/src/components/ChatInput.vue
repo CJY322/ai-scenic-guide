@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Mic, MicOff, SendHorizontal } from '@lucide/vue'
 import { useSpeechRecognition } from '../composables/useSpeechRecognition'
 
@@ -12,6 +12,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   send: [question: string]
+  voiceListeningChange: [listening: boolean]
 }>()
 
 const text = ref('')
@@ -37,6 +38,10 @@ const voiceStatus = computed(() => {
     return interimTranscript.value ? `正在识别：${interimTranscript.value}` : '正在听...'
   }
   return ''
+})
+
+watch(isListening, (listening) => {
+  emit('voiceListeningChange', listening)
 })
 
 function submit() {

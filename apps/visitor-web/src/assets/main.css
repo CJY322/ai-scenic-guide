@@ -66,6 +66,12 @@ textarea:disabled {
   background-size: 32px 32px, 32px 32px, auto;
 }
 
+.guide-shell--stage {
+  grid-template-columns: minmax(390px, 0.78fr) minmax(560px, 1.22fr);
+  gap: 22px;
+  padding: 22px;
+}
+
 .guide-panel,
 .chat-panel {
   min-width: 0;
@@ -174,6 +180,420 @@ h2 {
 
 .route-note p {
   margin: 0;
+}
+
+.digital-guide {
+  display: grid;
+  gap: 12px;
+  --digital-guide-stage-width: min(100%, 380px);
+  --digital-guide-stage-height: clamp(360px, 58vw, 460px);
+  --digital-guide-video-zoom: 1;
+}
+
+.digital-guide__stage {
+  position: relative;
+  height: 278px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, #dcefe7 0%, #f8fbf9 56%, #e7f1eb 100%),
+    #f8fbf9;
+}
+
+.digital-guide--video .digital-guide__stage,
+.digital-guide--portrait .digital-guide__stage {
+  width: var(--digital-guide-stage-width);
+  max-width: 380px;
+  height: var(--digital-guide-stage-height);
+  min-height: 360px;
+  margin: 0 auto;
+}
+
+.digital-guide--video .digital-guide__stage {
+  background: #121816;
+}
+
+.digital-guide--portrait .digital-guide__stage {
+  background: #17251f;
+}
+
+.digital-guide__video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  object-position: center center;
+  background: #121816;
+  transform: scale(var(--digital-guide-video-zoom));
+  transform-origin: center center;
+}
+
+.digital-guide__play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 4;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  color: #ffffff;
+  background: rgba(23, 107, 77, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 12px 28px rgba(18, 24, 22, 0.24);
+}
+
+.digital-guide__play:hover,
+.digital-guide__play:focus-visible {
+  background: #0f533a;
+  outline: none;
+}
+
+.digital-guide__portrait-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #17251f;
+}
+
+.digital-guide__portrait-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+  filter: blur(16px) saturate(1.08) brightness(0.72);
+  transform: scale(1.14);
+}
+
+.digital-guide__portrait {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center 44%;
+  transform: scale(1.01);
+  transition: filter 0.2s ease;
+}
+
+.portrait-mouth {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 61.5%;
+  width: 34px;
+  height: 6px;
+  background: rgba(96, 39, 43, 0.9);
+  border-radius: 999px;
+  box-shadow: 0 1px 5px rgba(40, 18, 20, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scaleX(0.8);
+  transition: opacity 0.16s ease;
+}
+
+.portrait-light {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 34%;
+  width: 44%;
+  height: 34%;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.9);
+}
+
+.portrait-light--two {
+  animation-delay: 0.28s;
+}
+
+.digital-guide--speaking .digital-guide__portrait {
+  animation: portraitSpeak 0.8s ease-in-out infinite;
+  filter: saturate(1.08) contrast(1.03);
+}
+
+.digital-guide--speaking .portrait-mouth {
+  opacity: 0.86;
+  animation: portraitMouth 0.34s ease-in-out infinite;
+}
+
+.digital-guide--speaking .portrait-light {
+  animation: portraitPulse 1.2s ease-out infinite;
+}
+
+.digital-guide--listening .digital-guide__portrait {
+  filter: saturate(1.06) brightness(1.04);
+}
+
+.digital-guide--thinking .digital-guide__portrait,
+.digital-guide--preparing .digital-guide__portrait {
+  animation: portraitThinking 1.1s ease-in-out infinite;
+}
+
+.digital-guide__loading {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  color: #ffffff;
+  background: rgba(23, 107, 77, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.digital-guide__error {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  z-index: 3;
+  max-width: calc(100% - 28px);
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  color: #ffffff;
+  background: rgba(179, 38, 30, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.digital-guide__loading-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.42);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: loadingSpin 0.9s linear infinite;
+}
+
+.mountain {
+  position: absolute;
+  bottom: 0;
+  width: 220px;
+  height: 120px;
+  background: #8db7a4;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.mountain--back {
+  left: 12px;
+  opacity: 0.45;
+}
+
+.mountain--front {
+  right: -18px;
+  width: 260px;
+  height: 150px;
+  background: #5f927b;
+  opacity: 0.38;
+}
+
+.guide-aura {
+  position: absolute;
+  left: 50%;
+  top: 25px;
+  width: 178px;
+  height: 202px;
+  border: 1px solid rgba(23, 107, 77, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.46);
+  transform: translateX(-50%);
+}
+
+.guide-figure {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  width: 130px;
+  height: 205px;
+  transform: translateX(-50%);
+  animation: guideIdle 4s ease-in-out infinite;
+}
+
+.guide-hair {
+  position: absolute;
+  left: 27px;
+  top: 10px;
+  width: 76px;
+  height: 64px;
+  background: #2d312f;
+  border-radius: 38px 38px 28px 28px;
+}
+
+.guide-face {
+  position: absolute;
+  left: 31px;
+  top: 28px;
+  width: 68px;
+  height: 78px;
+  background: #f2c8aa;
+  border: 1px solid #d7a184;
+  border-radius: 28px 28px 32px 32px;
+}
+
+.guide-eye {
+  position: absolute;
+  top: 32px;
+  width: 8px;
+  height: 8px;
+  background: #25342e;
+  border-radius: 50%;
+  animation: guideBlink 5s ease-in-out infinite;
+}
+
+.guide-eye--left {
+  left: 19px;
+}
+
+.guide-eye--right {
+  right: 19px;
+}
+
+.guide-mouth {
+  position: absolute;
+  left: 50%;
+  bottom: 17px;
+  width: 24px;
+  height: 7px;
+  border-radius: 0 0 12px 12px;
+  border-bottom: 3px solid #9b4b43;
+  transform: translateX(-50%);
+}
+
+.guide-neck {
+  position: absolute;
+  left: 50%;
+  top: 96px;
+  width: 28px;
+  height: 24px;
+  background: #e5b28f;
+  transform: translateX(-50%);
+}
+
+.guide-body {
+  position: absolute;
+  left: 15px;
+  bottom: 0;
+  width: 100px;
+  height: 98px;
+  background: #176b4d;
+  border: 1px solid #0f533a;
+  border-radius: 34px 34px 8px 8px;
+}
+
+.guide-collar {
+  position: absolute;
+  top: 11px;
+  width: 34px;
+  height: 38px;
+  background: #ffffff;
+  clip-path: polygon(0 0, 100% 0, 58% 100%);
+}
+
+.guide-collar--left {
+  left: 16px;
+}
+
+.guide-collar--right {
+  right: 16px;
+  transform: scaleX(-1);
+}
+
+.guide-badge {
+  position: absolute;
+  right: 22px;
+  bottom: 28px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+}
+
+.voice-wave {
+  position: absolute;
+  left: 50%;
+  top: 82px;
+  width: 168px;
+  height: 120px;
+  border: 2px solid rgba(23, 107, 77, 0.24);
+  border-radius: 8px;
+  opacity: 0;
+  transform: translateX(-50%) scale(0.82);
+}
+
+.voice-wave--two {
+  animation-delay: 0.25s;
+}
+
+.voice-wave--three {
+  animation-delay: 0.5s;
+}
+
+.digital-guide--speaking .voice-wave {
+  animation: voiceWave 1.4s ease-out infinite;
+}
+
+.digital-guide--speaking .guide-mouth {
+  height: 14px;
+  border: 0;
+  background: #8f3d36;
+  animation: speakingMouth 0.32s ease-in-out infinite;
+}
+
+.digital-guide--listening .guide-aura {
+  border-color: rgba(198, 95, 54, 0.55);
+  background: rgba(255, 240, 232, 0.58);
+}
+
+.digital-guide--thinking .guide-badge,
+.digital-guide--preparing .guide-badge {
+  animation: thinkingPulse 1s ease-in-out infinite;
+}
+
+.digital-guide__status {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--primary-strong);
+  font-weight: 800;
+}
+
+.status-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: var(--primary);
+  border-radius: 8px;
 }
 
 .suggested-questions {
@@ -297,12 +717,14 @@ h2 {
 }
 
 .auto-speak-toggle__text,
+.display-mode-button,
 .stop-speech-button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
+.display-mode-button,
 .stop-speech-button {
   min-height: 32px;
   padding: 5px 10px;
@@ -313,6 +735,8 @@ h2 {
   font-weight: 700;
 }
 
+.display-mode-button:hover,
+.display-mode-button:focus-visible,
 .stop-speech-button:hover,
 .stop-speech-button:focus-visible {
   background: #d7ede2;
@@ -678,6 +1102,116 @@ h2 {
   }
 }
 
+@keyframes guideIdle {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  50% {
+    transform: translateX(-50%) translateY(-4px);
+  }
+}
+
+@keyframes guideBlink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+
+  96% {
+    transform: scaleY(0.18);
+  }
+}
+
+@keyframes speakingMouth {
+  0%,
+  100% {
+    height: 7px;
+  }
+
+  50% {
+    height: 15px;
+  }
+}
+
+@keyframes voiceWave {
+  0% {
+    opacity: 0.4;
+    transform: translateX(-50%) scale(0.78);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(1.22);
+  }
+}
+
+@keyframes thinkingPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.16);
+  }
+}
+
+@keyframes portraitSpeak {
+  0%,
+  100% {
+    transform: scale(1.01) translateY(0);
+  }
+
+  50% {
+    transform: scale(1.025) translateY(-1px);
+  }
+}
+
+@keyframes portraitPulse {
+  0% {
+    opacity: 0.28;
+    transform: translate(-50%, -50%) scale(0.82);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.16);
+  }
+}
+
+@keyframes portraitMouth {
+  0%,
+  100% {
+    height: 5px;
+    transform: translate(-50%, -50%) scaleX(0.82);
+  }
+
+  50% {
+    height: 18px;
+    transform: translate(-50%, -50%) scaleX(1);
+  }
+}
+
+@keyframes portraitThinking {
+  0%,
+  100% {
+    filter: saturate(1.02) brightness(1);
+  }
+
+  50% {
+    filter: saturate(1.1) brightness(1.06);
+  }
+}
+
+@keyframes loadingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 960px) {
   body {
     overflow: auto;
@@ -690,6 +1224,10 @@ h2 {
     padding: 12px;
   }
 
+  .guide-shell--stage {
+    grid-template-columns: 1fr;
+  }
+
   .guide-panel {
     overflow: visible;
   }
@@ -700,6 +1238,10 @@ h2 {
 
   .chat-panel {
     min-height: 680px;
+  }
+
+  .digital-guide__stage {
+    height: 240px;
   }
 }
 

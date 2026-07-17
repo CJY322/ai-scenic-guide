@@ -2,7 +2,9 @@
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
+from app.api.routes.avatar import router as avatar_router
 from app.api.routes.chat import router as chat_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
@@ -25,6 +27,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+settings.avatar_assets_path.mkdir(parents=True, exist_ok=True)
+settings.generated_assets_path.mkdir(parents=True, exist_ok=True)
+app.mount("/avatar-assets", StaticFiles(directory=settings.avatar_assets_path), name="avatar-assets")
+app.mount("/generated", StaticFiles(directory=settings.generated_assets_path), name="generated")
+
+app.include_router(avatar_router, prefix=settings.api_prefix)
 app.include_router(chat_router, prefix=settings.api_prefix)
 
 

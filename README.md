@@ -193,3 +193,23 @@ GUIDE_DIFY_API_KEY=你的Dify应用APIKey
 
 说明文档见：`docs/phase-four-asr.md`。
 
+## 第五阶段：数字人导游形象与展示模式
+
+已在游客端增加轻量数字人导游形象：
+
+- 支持待机、聆听、检索和讲解状态。
+- 导游语音播报时有说话动画。
+- 支持适合景区终端的大屏展示模式。
+
+说明文档见：`docs/phase-five-digital-guide.md`。
+
+## 第六阶段：SadTalker 真实数字人接入
+
+已新增可选 SadTalker 适配：
+
+- 后端提供 `/api/v1/avatar/status` 和 `/api/v1/avatar/video`。
+- 前端在 SadTalker 配置可用时显示“真实数字人”开关。
+- 默认仍使用轻量数字人，不影响 Dify 问答、语音播报和语音输入。
+
+SadTalker 安装、导游形象图和 `.env` 配置见：`docs/phase-six-sadtalker-avatar.md`。
+

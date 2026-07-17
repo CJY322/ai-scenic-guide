@@ -1,9 +1,46 @@
-﻿from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient
+import pytest
 
 from app.api.routes.chat import get_guide_service
 from app.main import app
+from app.schemas.chat import SourceItem
 
 client = TestClient(app)
+
+
+class FakeGuideAnswer:
+    def __init__(self, answer: str, sources: list[SourceItem], fallback: bool) -> None:
+        self.answer = answer
+        self.sources = sources
+        self.emotion = "friendly"
+        self.fallback = fallback
+
+
+class FakeGuideService:
+    def ask(
+        self,
+        question: str,
+        interests: list[str] | None = None,
+        session_id: str | None = None,
+    ) -> FakeGuideAnswer:
+        if "火星" in question:
+            return FakeGuideAnswer(
+                answer="暂未查询到相关资料。当前为第一阶段模拟回答，建议以景区官方公告为准。",
+                sources=[],
+                fallback=True,
+            )
+        return FakeGuideAnswer(
+            answer="建议优先参观迎客松、莲花峰和光明顶，并结合当天开放信息安排路线。",
+            sources=[SourceItem(title="测试知识库", section="主要景点")],
+            fallback=False,
+        )
+
+
+@pytest.fixture(autouse=True)
+def use_fake_guide_service():
+    app.dependency_overrides[get_guide_service] = lambda: FakeGuideService()
+    yield
+    app.dependency_overrides.clear()
 
 
 def valid_payload(**overrides: object) -> dict[str, object]:
@@ -65,7 +102,12 @@ def test_chat_returns_fallback_when_mock_data_misses() -> None:
 
 def test_chat_hides_internal_error_details() -> None:
     class BrokenGuideService:
-        def ask(self, question: str, interests: list[str] | None = None) -> None:
+        def ask(
+            self,
+            question: str,
+            interests: list[str] | None = None,
+            session_id: str | None = None,
+        ) -> None:
             raise RuntimeError("database password leaked in stack")
 
     app.dependency_overrides[get_guide_service] = lambda: BrokenGuideService()
