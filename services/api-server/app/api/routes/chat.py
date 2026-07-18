@@ -7,9 +7,11 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import Settings, get_settings
 from app.core.request_id import generate_request_id
-from app.schemas.chat import ChatRequest, ChatResponse, ErrorResponse
+from app.schemas.chat import ChatRequest, ChatResponse, ErrorResponse, PersonalizedRecommendationResponse, RecommendationRequest
+from app.services.analytics_service import AnalyticsService
 from app.services.dify_service import DifyGuideService
 from app.services.guide_service import GuideService, GuideServiceUnavailableError
+from app.services.recommendation_service import RecommendationService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -36,6 +38,23 @@ def health(settings: Settings = Depends(get_settings)) -> dict[str, str]:
     }
 
 
+@router.post("/recommendations", response_model=PersonalizedRecommendationResponse)
+def personalized_recommendation(payload: RecommendationRequest) -> PersonalizedRecommendationResponse:
+    recommendation = RecommendationService().recommend(payload.interests)
+    return PersonalizedRecommendationResponse(
+        request_id=generate_request_id(),
+        matched_interests=recommendation.matched_interests,
+        route_title=recommendation.route_title,
+        route_summary=recommendation.route_summary,
+        duration=recommendation.duration,
+        stops=recommendation.stops,
+        focus_points=recommendation.focus_points,
+        tips=recommendation.tips,
+        suggested_questions=recommendation.suggested_questions,
+        interest_options=recommendation.interest_options,
+    )
+
+
 @router.post(
     "/chat",
     response_model=ChatResponse,
@@ -57,7 +76,7 @@ def chat(
     try:
         guide_answer = service.ask(payload.question, payload.interests, session_id=payload.session_id)
         latency_ms = max(0, round((perf_counter() - start) * 1000))
-        return ChatResponse(
+        response = ChatResponse(
             request_id=request_id,
             answer=guide_answer.answer,
             sources=guide_answer.sources,
@@ -65,6 +84,20 @@ def chat(
             latency_ms=latency_ms,
             fallback=guide_answer.fallback,
         )
+        try:
+            AnalyticsService().record_interaction(
+                session_id=payload.session_id,
+                request_id=request_id,
+                question=payload.question,
+                answer=guide_answer.answer,
+                emotion=guide_answer.emotion,
+                fallback=guide_answer.fallback,
+                latency_ms=latency_ms,
+                sources=guide_answer.sources,
+            )
+        except Exception:
+            logger.exception("analytics record failed request_id=%s", request_id)
+        return response
     except GuideServiceUnavailableError:
         status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         logger.exception("guide service unavailable request_id=%s", request_id)

@@ -16,6 +16,7 @@ class AvatarStatusResponse(BaseModel):
 class AvatarVideoRequest(BaseModel):
     text: AvatarText
     message_id: MessageId | None = None
+    session_id: MessageId | None = None
 
 
 class AvatarVideoResponse(BaseModel):
@@ -24,3 +25,9 @@ class AvatarVideoResponse(BaseModel):
     video_url: str
     cached: bool = False
     latency_ms: int = Field(ge=0)
+
+
+class AvatarCancelResponse(BaseModel):
+    request_id: str
+    cancelled: int = Field(ge=0)
+    message: str

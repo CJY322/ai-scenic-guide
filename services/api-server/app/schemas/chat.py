@@ -30,6 +30,29 @@ class ChatResponse(BaseModel):
     fallback: bool = False
 
 
+class RecommendationRequest(BaseModel):
+    interests: list[Interest] = Field(default_factory=list, max_length=5)
+
+
+class RecommendationInterestOption(BaseModel):
+    id: str
+    label: ShortText
+    description: str
+
+
+class PersonalizedRecommendationResponse(BaseModel):
+    request_id: str
+    matched_interests: list[ShortText]
+    route_title: ShortText
+    route_summary: str
+    duration: ShortText
+    stops: list[ShortText]
+    focus_points: list[str]
+    tips: list[str]
+    suggested_questions: list[ShortText]
+    interest_options: list[RecommendationInterestOption]
+
+
 class ErrorDetail(BaseModel):
     code: str
     message: str

@@ -2,12 +2,24 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 
 const AUTO_SPEAK_STORAGE_KEY = 'ai-scenic-guide-auto-speak'
 
+interface GuideSpeechProfile {
+  rate?: number
+  pitch?: number
+  volume?: number
+  voiceName?: string
+}
+
 export function useGuideSpeech() {
   const isSupported = typeof window !== 'undefined' && 'speechSynthesis' in window
   const activeMessageId = ref<string | null>(null)
   const isSpeaking = ref(false)
   const isPaused = ref(false)
   const autoSpeak = ref(readAutoSpeakPreference())
+  const speechProfile = ref<GuideSpeechProfile>({
+    rate: 0.95,
+    pitch: 1,
+    volume: 1,
+  })
 
   const hasActiveSpeech = computed(() => activeMessageId.value !== null)
 
@@ -20,9 +32,13 @@ export function useGuideSpeech() {
 
     const utterance = new SpeechSynthesisUtterance(text.trim())
     utterance.lang = 'zh-CN'
-    utterance.rate = 0.95
-    utterance.pitch = 1
-    utterance.volume = 1
+    utterance.rate = speechProfile.value.rate ?? 0.95
+    utterance.pitch = speechProfile.value.pitch ?? 1
+    utterance.volume = speechProfile.value.volume ?? 1
+    const voice = findVoice(speechProfile.value.voiceName)
+    if (voice) {
+      utterance.voice = voice
+    }
     utterance.onend = resetSpeechState
     utterance.onerror = resetSpeechState
 
@@ -76,6 +92,15 @@ export function useGuideSpeech() {
     window.localStorage.setItem(AUTO_SPEAK_STORAGE_KEY, value ? 'true' : 'false')
   }
 
+  function setSpeechProfile(profile: GuideSpeechProfile) {
+    speechProfile.value = {
+      rate: profile.rate ?? speechProfile.value.rate,
+      pitch: profile.pitch ?? speechProfile.value.pitch,
+      volume: profile.volume ?? speechProfile.value.volume,
+      voiceName: profile.voiceName ?? speechProfile.value.voiceName,
+    }
+  }
+
   function resetSpeechState() {
     activeMessageId.value = null
     isSpeaking.value = false
@@ -89,6 +114,16 @@ export function useGuideSpeech() {
     return window.localStorage.getItem(AUTO_SPEAK_STORAGE_KEY) === 'true'
   }
 
+  function findVoice(voiceName?: string) {
+    if (!isSupported || !voiceName) {
+      return undefined
+    }
+    const normalizedName = voiceName.toLowerCase()
+    return window.speechSynthesis
+      .getVoices()
+      .find((voice) => voice.name.toLowerCase().includes(normalizedName) || voice.lang.toLowerCase().includes('zh'))
+  }
+
   onBeforeUnmount(stop)
 
   return {
@@ -100,6 +135,7 @@ export function useGuideSpeech() {
     isSupported,
     replay,
     setAutoSpeak,
+    setSpeechProfile,
     stop,
     toggle,
   }

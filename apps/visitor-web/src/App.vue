@@ -1,7 +1,12 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
+import { computed } from 'vue'
+import AdminDashboardView from './views/AdminDashboardView.vue'
 import GuideChatView from './views/GuideChatView.vue'
+
+const isAdminRoute = computed(() => window.location.pathname.startsWith('/admin'))
 </script>
 
 <template>
-  <GuideChatView />
+  <AdminDashboardView v-if="isAdminRoute" />
+  <GuideChatView v-else />
 </template>

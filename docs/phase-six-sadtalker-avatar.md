@@ -48,7 +48,7 @@ pip install -r requirements.txt
 放一张正脸导游形象图，例如：
 
 ```text
-D:\ai-scenic-guide\data\avatar\huangshan-guide.png
+D:\ai-scenic-guide\data\avatar\guide-avatar.png
 ```
 
 建议图片要求：
@@ -73,7 +73,7 @@ GUIDE_AVATAR_PROVIDER=sadtalker
 GUIDE_GENERATED_ASSETS_PATH=D:\ai-scenic-guide\data\generated
 GUIDE_SADTALKER_ROOT=D:\ai-scenic-guide-engines\SadTalker
 GUIDE_SADTALKER_PYTHON=D:\ai-scenic-guide-engines\SadTalker\.venv\Scripts\python.exe
-GUIDE_SADTALKER_SOURCE_IMAGE=D:\ai-scenic-guide\data\avatar\huangshan-guide.png
+GUIDE_SADTALKER_SOURCE_IMAGE=D:\ai-scenic-guide\data\avatar\guide-avatar.png
 GUIDE_SADTALKER_TIMEOUT_SECONDS=300
 GUIDE_SADTALKER_PREPROCESS=full
 GUIDE_SADTALKER_STILL=true

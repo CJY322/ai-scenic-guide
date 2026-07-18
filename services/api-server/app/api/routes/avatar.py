@@ -7,10 +7,11 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import Settings, get_settings
 from app.core.request_id import generate_request_id
-from app.schemas.avatar import AvatarStatusResponse, AvatarVideoRequest, AvatarVideoResponse
+from app.schemas.avatar import AvatarCancelResponse, AvatarStatusResponse, AvatarVideoRequest, AvatarVideoResponse
 from app.schemas.chat import ErrorResponse
 from app.services.avatar_service import (
     AvatarGenerationError,
+    AvatarGenerationCancelledError,
     AvatarGenerationUnavailableError,
     SadTalkerAvatarService,
 )
@@ -67,7 +68,7 @@ def avatar_video(
     status_code = status.HTTP_200_OK
 
     try:
-        video = service.generate_video(payload.text)
+        video = service.generate_video(payload.text, session_id=payload.session_id, message_id=payload.message_id)
         latency_ms = max(0, round((perf_counter() - start) * 1000))
         return AvatarVideoResponse(
             request_id=request_id,
@@ -94,6 +95,15 @@ def avatar_video(
             message="真实数字人视频生成失败，请检查 SadTalker 安装和模型权重",
             request_id=request_id,
         )
+    except AvatarGenerationCancelledError:
+        status_code = 499
+        logger.info("avatar generation cancelled request_id=%s", request_id)
+        return _error_response(
+            status_code=status_code,
+            code="AVATAR_CANCELLED",
+            message="数字人生成任务已取消",
+            request_id=request_id,
+        )
     except Exception:
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         logger.exception("internal avatar error request_id=%s", request_id)
@@ -114,6 +124,28 @@ def avatar_video(
             status_code,
             latency_ms,
         )
+
+
+@router.post("/avatar/cancel", response_model=AvatarCancelResponse)
+def cancel_avatar(
+    service: SadTalkerAvatarService = Depends(get_avatar_service),
+    session_id: str | None = None,
+    message_id: str | None = None,
+) -> AvatarCancelResponse:
+    request_id = generate_request_id()
+    cancelled = service.cancel_jobs(session_id=session_id, message_id=message_id)
+    logger.info(
+        "avatar cancel request_id=%s session_id=%s message_id=%s cancelled=%s",
+        request_id,
+        session_id,
+        message_id,
+        cancelled.cancelled,
+    )
+    return AvatarCancelResponse(
+        request_id=request_id,
+        cancelled=cancelled.cancelled,
+        message="已取消当前会话的数字人生成任务",
+    )
 
 
 def _error_response(status_code: int, code: str, message: str, request_id: str) -> JSONResponse:

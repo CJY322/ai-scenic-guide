@@ -20,6 +20,29 @@ export interface ChatResponse {
   fallback: boolean
 }
 
+export interface RecommendationRequest {
+  interests: string[]
+}
+
+export interface RecommendationInterestOption {
+  id: string
+  label: string
+  description: string
+}
+
+export interface PersonalizedRecommendation {
+  request_id: string
+  matched_interests: string[]
+  route_title: string
+  route_summary: string
+  duration: string
+  stops: string[]
+  focus_points: string[]
+  tips: string[]
+  suggested_questions: string[]
+  interest_options: RecommendationInterestOption[]
+}
+
 export interface ApiErrorResponse {
   error?: {
     code: string

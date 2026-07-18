@@ -30,7 +30,7 @@ class DifyGuideService:
         user = session_id or "web-anonymous"
         payload: dict[str, Any] = {
             "inputs": {
-                "scenic_area": "黄山风景区",
+                "scenic_area": "灵山胜境",
                 "interests": interests or [],
             },
             "query": question,
@@ -62,7 +62,7 @@ class DifyGuideService:
         answer = str(data.get("answer") or "").strip()
         if not answer:
             return GuideAnswer(
-                answer="暂未从黄山知识库检索到可用答案，请换一种问法或以黄山风景区官方信息为准。",
+                answer="暂未从灵山胜境知识库检索到可用答案，请换一种问法或以灵山胜境官方信息为准。",
                 sources=[],
                 emotion="friendly",
                 fallback=True,
@@ -95,7 +95,7 @@ class DifyGuideService:
                 resource.get("document_name")
                 or resource.get("dataset_name")
                 or resource.get("source")
-                or "黄山知识库"
+                or "灵山胜境知识库"
             )
             section = resource.get("segment_position") or resource.get("score") or resource.get("dataset_name")
             item = (str(title), str(section) if section is not None else None)

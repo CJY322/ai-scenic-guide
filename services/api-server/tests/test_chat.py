@@ -30,7 +30,7 @@ class FakeGuideService:
                 fallback=True,
             )
         return FakeGuideAnswer(
-            answer="建议优先参观迎客松、莲花峰和光明顶，并结合当天开放信息安排路线。",
+            answer="建议优先参观灵山大佛、九龙灌浴和灵山梵宫，并结合当天演出和开放信息安排路线。",
             sources=[SourceItem(title="测试知识库", section="主要景点")],
             fallback=False,
         )
@@ -121,3 +121,27 @@ def test_chat_hides_internal_error_details() -> None:
     assert response.status_code == 500
     assert body["error"]["code"] == "INTERNAL_ERROR"
     assert "database password" not in body["error"]["message"]
+
+
+def test_recommendations_change_by_interest() -> None:
+    history_response = client.post("/api/v1/recommendations", json={"interests": ["历史文化"]})
+    nature_response = client.post("/api/v1/recommendations", json={"interests": ["自然风光"]})
+
+    history_body = history_response.json()
+    nature_body = nature_response.json()
+    assert history_response.status_code == 200
+    assert nature_response.status_code == 200
+    assert history_body["route_title"] != nature_body["route_title"]
+    assert "历史文化" in history_body["matched_interests"]
+    assert "自然风光" in nature_body["matched_interests"]
+    assert history_body["stops"]
+    assert nature_body["focus_points"]
+
+
+def test_recommendations_default_to_first_time_route() -> None:
+    response = client.post("/api/v1/recommendations", json={"interests": []})
+
+    body = response.json()
+    assert response.status_code == 200
+    assert body["route_title"] == "首次到访重点路线"
+    assert body["interest_options"]

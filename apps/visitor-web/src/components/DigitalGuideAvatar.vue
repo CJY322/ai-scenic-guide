@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Headphones, Mic, Play, Sparkles, Volume2 } from '@lucide/vue'
+import { Play } from '@lucide/vue'
 
 const props = defineProps<{
   listening: boolean
@@ -12,6 +12,7 @@ const props = defineProps<{
   videoLoop?: boolean
   videoLoading?: boolean
   videoMuted?: boolean
+  videoShowPlayButton?: boolean
   videoUrl?: string | null
 }>()
 
@@ -23,27 +24,6 @@ const portraitLoadFailed = ref(false)
 const videoRef = ref<HTMLVideoElement | null>(null)
 const videoNeedsStart = ref(false)
 const showPortrait = computed(() => Boolean(props.portraitUrl) && !portraitLoadFailed.value)
-const stateLabel = computed(() => {
-  if (props.listening) {
-    return '正在聆听'
-  }
-  if (props.videoError) {
-    return props.videoError
-  }
-  if (props.thinking) {
-    return '正在检索'
-  }
-  if (props.videoLoading) {
-    return '生成真实讲解中'
-  }
-  if (props.videoUrl) {
-    return '真实数字人讲解'
-  }
-  if (props.speaking) {
-    return '正在讲解'
-  }
-  return '待机导览'
-})
 
 watch(
   () => props.portraitUrl,
@@ -80,6 +60,13 @@ function playVideo(video: HTMLVideoElement | null) {
     .catch(() => {
       videoNeedsStart.value = true
     })
+}
+
+function replayVideo() {
+  if (videoRef.value) {
+    videoRef.value.currentTime = 0
+  }
+  playVideo(videoRef.value)
 }
 
 function handleVideoReady(event: Event) {
@@ -157,13 +144,13 @@ function handleVideoPause(event: Event) {
         @timeupdate="handleVideoProgress"
       ></video>
       <button
-        v-if="videoUrl && videoNeedsStart"
+        v-if="videoUrl && videoShowPlayButton !== false"
         type="button"
-        class="digital-guide__play"
-        @click="playVideo(videoRef)"
+        :class="['digital-guide__play', { 'digital-guide__play--dock': !videoNeedsStart }]"
+        @click="videoNeedsStart ? playVideo(videoRef) : replayVideo()"
       >
         <Play :size="18" />
-        <span>点击播放同步视频</span>
+        <span>{{ videoNeedsStart ? '点击播放同步视频' : '重新讲解' }}</span>
       </button>
       <div v-if="!videoUrl && showPortrait" class="digital-guide__portrait-wrap">
         <img class="digital-guide__portrait-backdrop" :src="portraitUrl ?? ''" alt="" />
@@ -206,16 +193,6 @@ function handleVideoPause(event: Event) {
       <div v-else-if="videoError && !videoUrl" class="digital-guide__error">
         {{ videoError }}
       </div>
-    </div>
-
-    <div class="digital-guide__status">
-      <span class="status-icon">
-        <Mic v-if="listening" :size="16" />
-        <Volume2 v-else-if="speaking" :size="16" />
-        <Sparkles v-else-if="thinking" :size="16" />
-        <Headphones v-else :size="16" />
-      </span>
-      <span>{{ stateLabel }}</span>
     </div>
   </section>
 </template>

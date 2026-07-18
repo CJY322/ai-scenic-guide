@@ -4,6 +4,8 @@ import { CircleAlert, Clock3, Pause, Play, RotateCcw, Sparkles, UserRound } from
 import type { ChatMessage } from '../types/chat'
 
 const props = defineProps<{
+  avatarVideoLoading?: boolean
+  avatarVideoSupported?: boolean
   message: ChatMessage
   activeSpeechMessageId?: string | null
   isSpeechPaused?: boolean
@@ -12,6 +14,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+  playAvatarVideo: [message: ChatMessage]
   retry: [question: string]
   replaySpeech: [message: ChatMessage]
   toggleSpeech: [message: ChatMessage]
@@ -22,6 +25,13 @@ const hasSources = computed(() => props.message.sources && props.message.sources
 const canSpeak = computed(
   () =>
     props.speechSupported &&
+    props.message.role === 'guide' &&
+    props.message.status === 'normal' &&
+    props.message.content.trim().length > 0,
+)
+const canPlayAvatarVideo = computed(
+  () =>
+    props.avatarVideoSupported &&
     props.message.role === 'guide' &&
     props.message.status === 'normal' &&
     props.message.content.trim().length > 0,
@@ -46,6 +56,10 @@ function toggleSpeech() {
 
 function replaySpeech() {
   emit('replaySpeech', props.message)
+}
+
+function playAvatarVideo() {
+  emit('playAvatarVideo', props.message)
 }
 </script>
 
@@ -86,14 +100,25 @@ function replaySpeech() {
         </button>
       </div>
 
-      <div v-if="canSpeak" class="speech-actions" aria-label="语音播报">
-        <button type="button" class="speech-button" :title="speechButtonLabel" @click="toggleSpeech">
+      <div v-if="canSpeak || canPlayAvatarVideo" class="speech-actions" aria-label="语音播报">
+        <button v-if="canSpeak" type="button" class="speech-button" :title="speechButtonLabel" @click="toggleSpeech">
           <Pause v-if="isSpeechActive && isSpeechPlaying" :size="16" />
           <Play v-else :size="16" />
           {{ speechButtonLabel }}
         </button>
-        <button type="button" class="speech-icon-button" title="重播" aria-label="重播" @click="replaySpeech">
+        <button v-if="canSpeak" type="button" class="speech-icon-button" title="重播" aria-label="重播" @click="replaySpeech">
           <RotateCcw :size="16" />
+        </button>
+        <button
+          v-if="canPlayAvatarVideo"
+          type="button"
+          class="speech-button"
+          :disabled="avatarVideoLoading"
+          title="播放真实数字人视频"
+          @click="playAvatarVideo"
+        >
+          <Play :size="16" />
+          {{ avatarVideoLoading ? '生成中' : '播放数字人' }}
         </button>
       </div>
     </div>

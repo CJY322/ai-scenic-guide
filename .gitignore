@@ -11,6 +11,7 @@ coverage/
 .pytest_cache/
 htmlcov/
 data/generated/
+data/analytics/*.jsonl
 engines/
 third_party/SadTalker/
 SadTalker/
@@ -41,3 +42,8 @@ pnpm-debug.log*
 Thumbs.db
 .tmp/
 .history/
+示范景区资料/
+deliverables/ppt-workspace/
+deliverables/rendered/
+deliverables/node_modules/
+deliverables/*.inspect.ndjson
