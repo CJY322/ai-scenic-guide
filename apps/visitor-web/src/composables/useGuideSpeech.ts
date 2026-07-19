@@ -15,6 +15,7 @@ export function useGuideSpeech() {
   const isSpeaking = ref(false)
   const isPaused = ref(false)
   const autoSpeak = ref(readAutoSpeakPreference())
+  const availableVoices = ref<SpeechSynthesisVoice[]>([])
   const speechProfile = ref<GuideSpeechProfile>({
     rate: 0.95,
     pitch: 1,
@@ -22,6 +23,11 @@ export function useGuideSpeech() {
   })
 
   const hasActiveSpeech = computed(() => activeMessageId.value !== null)
+
+  if (isSupported) {
+    loadSpeechVoices()
+    window.speechSynthesis.addEventListener('voiceschanged', loadSpeechVoices)
+  }
 
   function speak(messageId: string, text: string) {
     if (!isSupported || !text.trim()) {
@@ -114,17 +120,56 @@ export function useGuideSpeech() {
     return window.localStorage.getItem(AUTO_SPEAK_STORAGE_KEY) === 'true'
   }
 
+  function loadSpeechVoices() {
+    if (!isSupported) {
+      availableVoices.value = []
+      return
+    }
+    availableVoices.value = window.speechSynthesis.getVoices()
+  }
+
   function findVoice(voiceName?: string) {
     if (!isSupported || !voiceName) {
       return undefined
     }
     const normalizedName = voiceName.toLowerCase()
-    return window.speechSynthesis
-      .getVoices()
-      .find((voice) => voice.name.toLowerCase().includes(normalizedName) || voice.lang.toLowerCase().includes('zh'))
+    const voices = availableVoices.value.length ? availableVoices.value : window.speechSynthesis.getVoices()
+    const exactVoice = voices.find(
+      (voice) => voice.name === voiceName || voice.voiceURI === voiceName || voice.name.toLowerCase().includes(normalizedName),
+    )
+    if (exactVoice) {
+      return exactVoice
+    }
+
+    const chineseVoices = voices.filter(
+      (voice) => voice.lang.toLowerCase().includes('zh') || /chinese|mandarin|普通话|中文/.test(voice.name.toLowerCase()),
+    )
+    if (!chineseVoices.length) {
+      return undefined
+    }
+
+    if (normalizedName.includes('female')) {
+      return findVoiceByKeywords(chineseVoices, ['xiaoxiao', 'xiaoyi', 'yaoyao', 'huihui', 'female']) ?? chineseVoices[0]
+    }
+    if (normalizedName.includes('male')) {
+      return findVoiceByKeywords(chineseVoices, ['yunxi', 'yunjian', 'yunyang', 'kangkang', 'male']) ?? chineseVoices[0]
+    }
+    return chineseVoices[0]
   }
 
-  onBeforeUnmount(stop)
+  function findVoiceByKeywords(voices: SpeechSynthesisVoice[], keywords: string[]) {
+    return voices.find((voice) => {
+      const voiceName = voice.name.toLowerCase()
+      return keywords.some((keyword) => voiceName.includes(keyword))
+    })
+  }
+
+  onBeforeUnmount(() => {
+    stop()
+    if (isSupported) {
+      window.speechSynthesis.removeEventListener('voiceschanged', loadSpeechVoices)
+    }
+  })
 
   return {
     activeMessageId,

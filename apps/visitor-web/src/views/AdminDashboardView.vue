@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
   Activity,
   BarChart3,
@@ -19,6 +19,7 @@ import {
   Save,
   Settings,
   Trash2,
+  Volume2,
 } from '@lucide/vue'
 import {
   fetchAnalyticsReport,
@@ -52,6 +53,8 @@ type AdminTab = 'overview' | 'status' | 'knowledge' | 'faq' | 'recommended' | 's
 type SettingsDraft = AdminAppSettings & { dify_api_key: string }
 type ChartMetric = { label: string; value: number; ratio: number; color: string }
 type SvgPoint = { x: number; y: number; value: number; label: string }
+type VoiceNameOption = { label: string; value: string; description: string }
+type VoiceStyleOption = { label: string; value: string; rate: number; pitch: number; volume: number }
 
 const tabs: Array<{ id: AdminTab; label: string; icon: unknown }> = [
   { id: 'overview', label: '数据大屏', icon: BarChart3 },
@@ -64,6 +67,46 @@ const tabs: Array<{ id: AdminTab; label: string; icon: unknown }> = [
   { id: 'report', label: '感受度报告', icon: ClipboardList },
 ]
 const emotions: GuideEmotion[] = ['neutral', 'friendly', 'happy', 'concerned', 'serious']
+const fallbackVoiceNameOptions: VoiceNameOption[] = [
+  { label: '浏览器默认中文语音', value: 'zh-CN', description: '当前浏览器尚未返回真实语音列表时使用' },
+]
+const voiceStyleOptions: VoiceStyleOption[] = [
+  {
+    label: '温和清晰',
+    value: '温和清晰，语速适中，适合老人、亲子游客和第一次到访游客。',
+    rate: 0.95,
+    pitch: 1,
+    volume: 1,
+  },
+  {
+    label: '标准讲解',
+    value: '标准景区讲解风格，表达准确，节奏平稳，适合常规导览播报。',
+    rate: 1,
+    pitch: 1,
+    volume: 1,
+  },
+  {
+    label: '活泼亲切',
+    value: '活泼亲切，语气轻快，适合亲子游客、互动问答和轻松路线推荐。',
+    rate: 1.08,
+    pitch: 1.08,
+    volume: 1,
+  },
+  {
+    label: '庄重文化',
+    value: '庄重沉稳，语速略慢，适合佛教文化、历史典故和重要景点讲解。',
+    rate: 0.88,
+    pitch: 0.95,
+    volume: 1,
+  },
+  {
+    label: '慢速清晰',
+    value: '慢速清晰，咬字明确，适合老人游客、嘈杂环境和重点安全提醒。',
+    rate: 0.82,
+    pitch: 1,
+    volume: 1,
+  },
+]
 const chartColors = ['#176b4d', '#c65f36', '#2f7da1', '#8a6f22', '#6f5ca8', '#4f7c61', '#b24f4a', '#5e7c8a']
 const sentimentColors: Record<string, string> = {
   positive: '#176b4d',
@@ -86,6 +129,7 @@ const knowledgeContent = ref('')
 const newKnowledgePath = ref('new-note.md')
 const faqEntries = ref<AdminFaqEntry[]>([])
 const recommendedQuestions = ref<string[]>([])
+const availableSpeechVoices = ref<SpeechSynthesisVoice[]>([])
 const isLoading = ref(true)
 const busyKey = ref<string | null>(null)
 const notice = ref('')
@@ -183,9 +227,62 @@ const topicDonutStyle = computed(() => ({ background: createDonutGradient(topicC
 const reportTopicDonutStyle = computed(() => ({ background: createDonutGradient(reportTopicChartMetrics.value) }))
 const sentimentDonutStyle = computed(() => ({ background: createDonutGradient(sentimentChartMetrics.value) }))
 const trendChart = computed(() => createTrendChart(dashboardOverview.value?.satisfaction_trend ?? []))
+const realVoiceNameOptions = computed<VoiceNameOption[]>(() => {
+  const voices = availableSpeechVoices.value
+  if (!voices.length) {
+    return fallbackVoiceNameOptions
+  }
+
+  return voices
+    .slice()
+    .sort((first, second) => {
+      const firstIsChinese = isChineseVoice(first) ? 0 : 1
+      const secondIsChinese = isChineseVoice(second) ? 0 : 1
+      if (firstIsChinese !== secondIsChinese) {
+        return firstIsChinese - secondIsChinese
+      }
+      return first.name.localeCompare(second.name)
+    })
+    .map((voice) => ({
+      label: `${voice.name}（${voice.lang || '未知语言'}）`,
+      value: voice.name,
+      description: `${isChineseVoice(voice) ? '真实中文语音' : '真实系统语音'}${voice.default ? '，浏览器默认' : ''}`,
+    }))
+})
+const selectableVoiceNameOptions = computed(() => {
+  const currentVoiceName = avatarProfile.value?.voice_name?.trim()
+  if (currentVoiceName && !realVoiceNameOptions.value.some((option) => option.value === currentVoiceName)) {
+    return [
+      { label: `当前配置：${currentVoiceName}`, value: currentVoiceName, description: '当前保存的语音，未在本浏览器真实语音列表中找到' },
+      ...realVoiceNameOptions.value,
+    ]
+  }
+  return realVoiceNameOptions.value
+})
+const selectableVoiceStyleOptions = computed(() => {
+  const currentVoiceStyle = avatarProfile.value?.voice_style?.trim()
+  if (currentVoiceStyle && !voiceStyleOptions.some((option) => option.value === currentVoiceStyle)) {
+    return [
+      { label: `当前配置`, value: currentVoiceStyle, rate: avatarProfile.value?.voice_rate ?? 0.95, pitch: avatarProfile.value?.voice_pitch ?? 1, volume: avatarProfile.value?.voice_volume ?? 1 },
+      ...voiceStyleOptions,
+    ]
+  }
+  return voiceStyleOptions
+})
 
 onMounted(() => {
+  loadSpeechVoices()
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.addEventListener('voiceschanged', loadSpeechVoices)
+  }
   void loadDashboard()
+})
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.removeEventListener('voiceschanged', loadSpeechVoices)
+  }
 })
 
 async function loadDashboard() {
@@ -422,6 +519,63 @@ function addRecommendedQuestion() {
 
 function removeRecommendedQuestion(index: number) {
   recommendedQuestions.value.splice(index, 1)
+}
+
+function loadSpeechVoices() {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    availableSpeechVoices.value = []
+    return
+  }
+
+  const voices = window.speechSynthesis.getVoices()
+  const seen = new Set<string>()
+  availableSpeechVoices.value = voices.filter((voice) => {
+    const key = `${voice.name}|${voice.lang}`
+    if (seen.has(key)) {
+      return false
+    }
+    seen.add(key)
+    return true
+  })
+}
+
+function isChineseVoice(voice: SpeechSynthesisVoice) {
+  return voice.lang.toLowerCase().includes('zh') || /chinese|mandarin|普通话|中文/.test(voice.name.toLowerCase())
+}
+
+function previewVoice() {
+  if (!avatarProfile.value || typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    showError('当前浏览器不支持语音试听')
+    return
+  }
+
+  const utterance = new SpeechSynthesisUtterance('您好，我是灵山胜境AI数字人导游。现在为您试听当前选择的讲解声音。')
+  const selectedVoice = availableSpeechVoices.value.find((voice) => voice.name === avatarProfile.value?.voice_name)
+  utterance.lang = selectedVoice?.lang || 'zh-CN'
+  utterance.rate = avatarProfile.value.voice_rate
+  utterance.pitch = avatarProfile.value.voice_pitch
+  utterance.volume = avatarProfile.value.voice_volume
+  if (selectedVoice) {
+    utterance.voice = selectedVoice
+  }
+
+  window.speechSynthesis.cancel()
+  window.speechSynthesis.speak(utterance)
+}
+
+function applyVoiceStylePreset() {
+  if (!avatarProfile.value) {
+    return
+  }
+
+  const selectedPreset = voiceStyleOptions.find((option) => option.value === avatarProfile.value?.voice_style)
+  if (!selectedPreset) {
+    return
+  }
+
+  avatarProfile.value.voice_rate = selectedPreset.rate
+  avatarProfile.value.voice_pitch = selectedPreset.pitch
+  avatarProfile.value.voice_volume = selectedPreset.volume
 }
 
 function clearMessages() {
@@ -979,11 +1133,24 @@ function createAreaPath(points: SvgPoint[]) {
             <div class="admin-form-grid admin-form-grid--single">
               <label class="admin-field">
                 <span>声音名称</span>
-                <input v-model="avatarProfile.voice_name" type="text" />
+                <select v-model="avatarProfile.voice_name">
+                  <option v-for="option in selectableVoiceNameOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+                <small>
+                  {{ selectableVoiceNameOptions.find((option) => option.value === avatarProfile?.voice_name)?.description }}
+                  <template v-if="availableSpeechVoices.length">，共发现 {{ availableSpeechVoices.length }} 个浏览器语音</template>
+                </small>
               </label>
               <label class="admin-field">
                 <span>声音风格</span>
-                <textarea v-model="avatarProfile.voice_style" rows="3"></textarea>
+                <select v-model="avatarProfile.voice_style" @change="applyVoiceStylePreset">
+                  <option v-for="option in selectableVoiceStyleOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+                <small>{{ avatarProfile.voice_style }}</small>
               </label>
               <div class="admin-three-columns">
                 <label class="admin-field">
@@ -998,6 +1165,12 @@ function createAreaPath(points: SvgPoint[]) {
                   <span>音量</span>
                   <input v-model.number="avatarProfile.voice_volume" min="0" max="1" step="0.05" type="number" />
                 </label>
+              </div>
+              <div class="admin-section-toolbar admin-section-toolbar--end">
+                <button type="button" class="admin-action-button" @click="previewVoice">
+                  <Volume2 :size="16" />
+                  试听当前声音
+                </button>
               </div>
 
               <label class="admin-field">
