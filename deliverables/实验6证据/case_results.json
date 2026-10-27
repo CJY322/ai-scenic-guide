@@ -1,0 +1,94 @@
+{
+  "cases": [
+    {
+      "case": "invalid_argument_then_corrected",
+      "expected": "completed",
+      "actual": "completed",
+      "reason": "required tool evidence and answer details verified",
+      "steps": 5,
+      "task_id": "exp6-20261027-100817-e69e87e3",
+      "elapsed_ms": 0,
+      "log_file": "exp6-20261027-100817-e69e87e3.jsonl"
+    },
+    {
+      "case": "tool_exception_then_retry",
+      "expected": "completed",
+      "actual": "completed",
+      "reason": "required tool evidence and answer details verified",
+      "steps": 5,
+      "task_id": "exp6-20261027-100817-be5fdae3",
+      "elapsed_ms": 0,
+      "log_file": "exp6-20261027-100817-be5fdae3.jsonl"
+    },
+    {
+      "case": "step_limit",
+      "expected": "step_limit",
+      "actual": "step_limit",
+      "reason": "maximum 2 model decisions reached",
+      "steps": 2,
+      "task_id": "exp6-20261027-100817-1a867351",
+      "elapsed_ms": 16,
+      "log_file": "exp6-20261027-100817-1a867351.jsonl"
+    },
+    {
+      "case": "total_time_limit",
+      "expected": "time_limit",
+      "actual": "time_limit",
+      "reason": "total runtime limit reached before tool call",
+      "steps": 1,
+      "task_id": "exp6-20261027-100817-671d3c59",
+      "elapsed_ms": 31,
+      "log_file": "exp6-20261027-100817-671d3c59.jsonl"
+    },
+    {
+      "case": "tool_timeout",
+      "expected": "tool_timeout",
+      "actual": "tool_timeout",
+      "reason": "tool wait timed out; cancellation is not guaranteed; check output before any retry",
+      "steps": 1,
+      "task_id": "exp6-20261027-100817-165a7556",
+      "elapsed_ms": 16,
+      "log_file": "exp6-20261027-100817-165a7556.jsonl"
+    },
+    {
+      "case": "approval_yes",
+      "expected": "completed",
+      "actual": "completed",
+      "reason": "saved file and final answer required",
+      "steps": 2,
+      "task_id": "exp6-20261027-100817-5d1d5add",
+      "elapsed_ms": 0,
+      "log_file": "exp6-20261027-100817-5d1d5add.jsonl"
+    },
+    {
+      "case": "approval_no",
+      "expected": "approval_rejected",
+      "actual": "approval_rejected",
+      "reason": "user refused; no write occurred",
+      "steps": 1,
+      "task_id": "exp6-20261027-100817-08a32d1d",
+      "elapsed_ms": 0,
+      "log_file": "exp6-20261027-100817-08a32d1d.jsonl"
+    },
+    {
+      "case": "approval_no_response",
+      "expected": "approval_required",
+      "actual": "approval_required",
+      "reason": "confirmation was not provided; no write occurred",
+      "steps": 1,
+      "task_id": "exp6-20261027-100817-f9c09b00",
+      "elapsed_ms": 0,
+      "log_file": "exp6-20261027-100817-f9c09b00.jsonl"
+    },
+    {
+      "case": "tool_not_allowed",
+      "expected": "tool_error",
+      "actual": "tool_error",
+      "reason": "TOOL_NOT_ALLOWED",
+      "steps": 3,
+      "task_id": "exp6-20261027-100817-4d691065",
+      "elapsed_ms": 15,
+      "log_file": "exp6-20261027-100817-4d691065.jsonl"
+    }
+  ]
+}

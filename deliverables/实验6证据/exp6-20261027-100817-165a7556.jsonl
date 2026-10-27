@@ -1,0 +1,4 @@
+{"task_id": "exp6-20261027-100817-165a7556", "time": "2026-10-27T10:08:17+08:00", "event": "started", "step": 0, "elapsed_ms": 0, "goal": "从09:00入园，查询半日路线、演出提示并计算结束时间", "start_time": "09:00", "mode": "route_plan"}
+{"task_id": "exp6-20261027-100817-165a7556", "time": "2026-10-27T10:08:17+08:00", "event": "model_decision", "step": 1, "elapsed_ms": 0, "decision": {"action": "tool", "name": "get_route", "arguments": {"route_type": "half_day"}}, "model_metadata": {"test_double": true}}
+{"task_id": "exp6-20261027-100817-165a7556", "time": "2026-10-27T10:08:17+08:00", "event": "tool_error", "step": 1, "elapsed_ms": 16, "tool": "get_route", "error_type": "TOOL_TIMEOUT"}
+{"task_id": "exp6-20261027-100817-165a7556", "time": "2026-10-27T10:08:17+08:00", "event": "finished", "step": 1, "elapsed_ms": 16, "status": "tool_timeout", "reason": "tool wait timed out; cancellation is not guaranteed; check output before any retry", "answer": ""}
