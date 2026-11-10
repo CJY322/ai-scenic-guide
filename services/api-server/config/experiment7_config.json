@@ -1,0 +1,12 @@
+{
+  "prototype_name": "灵山胜境可信导游原型",
+  "model_name": "deepseek-v4-flash",
+  "provider": "Dify Cloud RAG Chat App",
+  "api_key_env": "GUIDE_DIFY_API_KEY",
+  "response_mode": "blocking",
+  "timeout_seconds": 60,
+  "prompt_versions": {
+    "P0": "直接将游客问题提交给知识库应用，不增加额外约束。",
+    "P1": "强调只依据灵山胜境资料、强时效信息核验、能力边界、引用和信息不足时澄清。"
+  }
+}
