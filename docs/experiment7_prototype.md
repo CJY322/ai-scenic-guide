@@ -16,6 +16,9 @@
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\experiment7_eval.py --version P0
+.\.venv\Scripts\python.exe scripts\experiment7_eval.py --version P1
 ```
 
 证据输出到 `outputs/experiment7/`。每条记录包含回答、来源、规则判定、错误类型、响应时间、Token、调用次数和接口费用。
+
+P0 是第1周初版，直接提交原问题；P1 是第2周修订版，增加输入预检、可信回答约束、可见资料依据、长度检查及失败记录。两版使用同一模型、同一知识库和同一测试集。

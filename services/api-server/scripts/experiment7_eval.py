@@ -1,7 +1,7 @@
 """Experiment 7 week-1 evaluator for the Lingshan RAG prototype.
 
 Run from services/api-server:
-    python scripts/experiment7_eval.py --version P0
+    python scripts/experiment7_eval.py --version P1
 
 The API key is read from GUIDE_DIFY_API_KEY in .env and is never written to
 the evidence file. Every case starts an independent Dify conversation.
@@ -53,12 +53,55 @@ def judge(case: dict[str, Any], answer: str, status: object) -> dict[str, Any]:
     }
 
 
-def call_case(client: httpx.Client, settings: Settings, case: dict[str, Any], run_id: str) -> dict[str, Any]:
+def build_query(version: str, question: str, config: dict[str, Any]) -> str:
+    if version == "P0":
+        return question
+    return f"{config['p1_query_prefix']}\n{question}"
+
+
+def visible_sources(answer: str, resources: list[Any]) -> list[str]:
+    sources = [
+        str(item.get("document_name") or item.get("dataset_name") or "灵山胜境知识库")
+        for item in resources if isinstance(item, dict)
+    ][:5]
+    if "资料依据：" in answer and not sources:
+        citation = answer.rsplit("资料依据：", 1)[1].strip().splitlines()[0][:100]
+        if citation:
+            sources.append(citation)
+    return list(dict.fromkeys(sources))
+
+
+def call_case(
+    client: httpx.Client,
+    settings: Settings,
+    case: dict[str, Any],
+    run_id: str,
+    version: str,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    question = case["question"].strip()
+    if version == "P1" and (len(question) < 2 or not re.search(r"[\w\u4e00-\u9fff]", question)):
+        answer = "请补充您想了解的具体内容，例如景点、路线、交通或游览注意事项。\n资料依据：无可靠资料，需通过官方渠道核验"
+        result = {
+            "http_status": 200,
+            "answer": answer,
+            "sources": ["无可靠资料，需通过官方渠道核验"],
+            "elapsed_ms": 0,
+            "total_tokens": 0,
+            "total_price": "0",
+            "currency": "USD",
+            "model_calls": 0,
+            "processing_note": "异常输入由本地预检拦截，未调用收费接口",
+        }
+        result.update(judge(case, answer, 200))
+        result["citation_pass"] = True
+        result["length_pass"] = len(answer) <= int(config["max_answer_chars"])
+        return result
     payload = {
         "inputs": {"scenic_area": "灵山胜境", "interests": []},
-        "query": case["question"],
+        "query": build_query(version, question, config),
         "response_mode": "blocking",
-        "user": f"exp7-{run_id}-P0-{case['id']}",
+        "user": f"exp7-{run_id}-{version}-{case['id']}",
     }
     started = perf_counter()
     try:
@@ -73,13 +116,11 @@ def call_case(client: httpx.Client, settings: Settings, case: dict[str, Any], ru
         metadata = data.get("metadata") or {} if isinstance(data, dict) else {}
         resources = metadata.get("retriever_resources") or [] if isinstance(metadata, dict) else []
         usage = metadata.get("usage") or {} if isinstance(metadata, dict) else {}
+        sources = visible_sources(answer, resources)
         result = {
             "http_status": response.status_code,
             "answer": answer,
-            "sources": [
-                str(item.get("document_name") or item.get("dataset_name") or "灵山胜境知识库")
-                for item in resources if isinstance(item, dict)
-            ][:5],
+            "sources": sources,
             "elapsed_ms": elapsed_ms,
             "total_tokens": usage.get("total_tokens"),
             "total_price": usage.get("total_price", "0"),
@@ -99,12 +140,18 @@ def call_case(client: httpx.Client, settings: Settings, case: dict[str, Any], ru
             "error": {"type": type(exc).__name__, "message": str(exc)[:300]},
         }
     result.update(judge(case, result["answer"], result["http_status"]))
+    result["citation_pass"] = bool(result["sources"]) if version == "P1" else None
+    result["length_pass"] = len(result["answer"]) <= int(config["max_answer_chars"]) if version == "P1" else None
+    if version == "P1" and (not result["citation_pass"] or not result["length_pass"]):
+        result["automatic_pass"] = False
+        result["manual_judgement"] = "不通过"
+        result["error_type"] = "引用缺失或输出过长"
     return result
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--version", choices=["P0"], default="P0")
+    parser.add_argument("--version", choices=["P0", "P1"], default="P1")
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES)
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
@@ -121,11 +168,14 @@ def main() -> int:
     timeout = httpx.Timeout(float(config["timeout_seconds"]))
     with httpx.Client(timeout=timeout) as client:
         for case in cases:
-            result = call_case(client, settings, case, run_id)
+            result = call_case(client, settings, case, run_id, args.version, config)
             rows.append({"id": case["id"], "category": case["category"], "question": case["question"], **result})
             print(f"{case['id']}: {result['http_status']} {result['elapsed_ms']} ms {'PASS' if result['automatic_pass'] else 'FAIL'}")
 
     passed = sum(1 for row in rows if row["automatic_pass"])
+    average_ms = round(sum(row["elapsed_ms"] for row in rows) / len(rows))
+    total_tokens = sum(int(row["total_tokens"] or 0) for row in rows)
+    citation_count = sum(1 for row in rows if row["sources"])
     evidence = {
         "experiment": "实验7灵山胜境核心AI能力原型评测",
         "version": args.version,
@@ -134,7 +184,16 @@ def main() -> int:
         "provider": config["provider"],
         "timestamp": datetime.now(CHINA_TZ).isoformat(timespec="seconds"),
         "independent_conversations": True,
-        "summary": {"total": len(rows), "passed": passed, "failed": len(rows) - passed, "pass_rate": round(passed / len(rows), 4)},
+        "summary": {
+            "total": len(rows),
+            "passed": passed,
+            "failed": len(rows) - passed,
+            "pass_rate": round(passed / len(rows), 4),
+            "average_elapsed_ms": average_ms,
+            "total_tokens": total_tokens,
+            "total_model_calls": sum(row["model_calls"] for row in rows),
+            "visible_source_rate": round(citation_count / len(rows), 4),
+        },
         "results": rows,
     }
     args.output_root.mkdir(parents=True, exist_ok=True)
